@@ -6,4 +6,4 @@ Student Info
 
 * Student Name: Nguyen Quynh Trang
 * Student ID: 22BA13303
-* Student Group ID: 
+* Student Group ID: 13
