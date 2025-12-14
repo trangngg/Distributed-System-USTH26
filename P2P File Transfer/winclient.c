@@ -93,11 +93,11 @@ void get_file_list() {
     server.sin_port = htons(SERVER_PORT);
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    DWORD timeout = 2000; // 2000 ms = 2 giây
+    DWORD timeout = 2000;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
     Message msg;
-    msg.type = MSG_LIST; // Gửi yêu cầu LIST
+    msg.type = MSG_LIST; 
     
     sendto(sock, (char*)&msg, sizeof(msg), 0,
            (struct sockaddr*)&server, sizeof(server));
@@ -200,7 +200,7 @@ int main() {
         printf("\n=== P2P File Sharing ===\n");
         printf("1. Share file\n");
         printf("2. Download file\n");
-        printf("3. Show all shared files\n"); // Thêm lựa chọn 3
+        printf("3. Show all shared files\n"); 
         printf("4. Exit\n");
         printf("Choice: ");
         scanf("%d", &choice);
@@ -233,4 +233,5 @@ int main() {
 
     WSACleanup();
     return 0;
+
 }
