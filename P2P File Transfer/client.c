@@ -6,8 +6,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <signal.h>
-#include <sys/wait.h>
 
 #define SERVER_PORT 9000
 #define NODE_PORT   10000
@@ -32,9 +30,6 @@ typedef struct {
     int type;
     FileEntry entry;
 } Message;
-
-/* Global to track background process */
-pid_t sharing_pid = 0;
 
 /* Global Variable to store Server IP after discovery */
 char SERVER_IP[INET_ADDRSTRLEN]; 
@@ -99,16 +94,17 @@ void auto_discover_server() {
     close(sock);
 }
 
-/* ---------- Serve file ---------- */
+/* ---------- Serve file (Blocking Mode) ---------- */
 void serve_file(const char *filename) {
     int server = socket(AF_INET, SOCK_STREAM, 0);
 
+    /* Allow port reuse so we can use port 10000 again immediately */
     int opt = 1;
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
-        .sin_port = htons(NODE_PORT), /* Using Hardcoded Port */
+        .sin_port = htons(NODE_PORT),
         .sin_addr.s_addr = INADDR_ANY
     };
 
@@ -116,14 +112,15 @@ void serve_file(const char *filename) {
         perror("[Error] Bind failed");
         return;
     }
-    listen(server, 5);
+    listen(server, 1);
 
-    printf("Sharing '%s' on port %d...\n", filename, NODE_PORT);
+    /* 1. Print status */
+    printf("Sharing '%s' on port %d... (Waiting for peer)\n", filename, NODE_PORT);
 
-    while (1) {
-        int client = accept(server, NULL, NULL);
-        if (client < 0) continue;
+    /* 2. BLOCKING: This line stops the code until a peer connects */
+    int client = accept(server, NULL, NULL);
 
+    if (client >= 0) {
         FILE *fp = fopen(filename, "rb");
         if (fp) {
             char buffer[BUF_SIZE];
@@ -131,12 +128,17 @@ void serve_file(const char *filename) {
             while ((n = fread(buffer, 1, BUF_SIZE, fp)) > 0)
                 send(client, buffer, n, 0);
             fclose(fp);
-            printf("\n[Background] File '%s' sent to peer.\n", filename);
+            
+            /* 3. Success Message */
+            printf("[Background] File '%s' sent to peer.\n", filename);
         } else {
-            printf("\n[Error] Could not open file '%s'\n", filename);
+            printf("[Error] Could not open file '%s'\n", filename);
         }
         close(client);
     }
+    
+    /* 4. Close server socket so we return to menu */
+    close(server);
 }
 
 /* ---------- Register file ---------- */
@@ -156,7 +158,7 @@ void register_file(const char *filename) {
     msg.type = MSG_REGISTER;
     strcpy(msg.entry.filename, filename);
     strcpy(msg.entry.node_ip, local_ip);
-    msg.entry.node_port = NODE_PORT; /* Using Hardcoded Port */
+    msg.entry.node_port = NODE_PORT;
 
     sendto(sock, &msg, sizeof(msg), 0,
            (struct sockaddr*)&server, sizeof(server));
@@ -240,7 +242,6 @@ void download_selected_file(FileEntry entry) {
 
 /* ---------- Main ---------- */
 int main() {
-    /* Auto-Discover Server immediately */
     auto_discover_server();
 
     int choice;
@@ -256,29 +257,11 @@ int main() {
         scanf("%d", &choice);
 
         if (choice == 1) {
-            if (sharing_pid > 0) {
-                printf("[!] Stopping previous share (PID %d)...\n", sharing_pid);
-                kill(sharing_pid, SIGKILL);
-                waitpid(sharing_pid, NULL, 0);
-                sharing_pid = 0;
-            }
-
             printf("File name: ");
             scanf("%s", filename);
             
-            register_file(filename); /* No port arg */
-
-            pid_t pid = fork();
-
-            if (pid == 0) {
-                serve_file(filename); /* No port arg */
-                exit(0); 
-            }
-            else if (pid > 0) {
-                sharing_pid = pid;
-                printf("[Info] Background server started (PID: %d)\n", pid);
-                usleep(100000); 
-            }
+            register_file(filename);
+            serve_file(filename);
         }
         else if (choice == 2) {
             printf("Show all shared files:\n");
@@ -301,7 +284,6 @@ int main() {
             }
         }
         else {
-            if (sharing_pid > 0) kill(sharing_pid, SIGKILL);
             break;
         }
     }
