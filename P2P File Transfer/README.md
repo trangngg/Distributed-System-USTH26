@@ -1,10 +1,51 @@
-*
-* For using the server.c and client.c:
-*
-* Run server.c in terminal
-* Open another terminal window, run client.c:
-*   In client.c, it will have 2 options: 1. Share file; 2. Download file
-*   Type in the number in the choice you want(first time type 1 and type the name of file you want to share in the same directory with client.c)
-*   For downloading, type the name of file you need to download, the file will be installed in the same directory with client.c
-* !!!: The program server.c MUST be run only ONE time in only ONE device ath the same time!!!
-* The client.c can be run in many windows, with many devies at the same time
+**Peer-to-Peer File Transfer System**
+**1. Introduction**
+
+This project implements a simple Peer-to-Peer (P2P) File Transfer system using C socket programming.
+The system consists of one centralized server and multiple clients, allowing users to share and download files across different devices through network communication.
+
+**2. Deployment Guideline**
+
+Compile the source files using gcc:
+
+gcc server.c -o server
+gcc client.c -o client
+
+**Running the Server**
+
+Run the server on one device only and only once:
+
+./server
+
+The server must be running continuously to handle client requests.
+
+**Running the Client**
+
+Open another terminal window (or use another device) and run:
+
+./client
+
+The client program can be executed on multiple terminals and multiple devices at the same time.
+
+**3. Usage Guideline**
+
+After running client.c, the user can choose one of the following options:
+
+1. Share file
+2. Download file
+
+
+**Share file:**
+Choose option 1 and enter the file name. The file must be located in the same directory as client.c.
+
+**Download file:**
+Choose option 2 and enter the file name to download. The file will be saved in the same directory as client.c.
+
+**4. Contribution**
+
+Member Name	Contribution
+Nguyen Thi Minh Nguyet	Introduction, Architecture Design
+Nguyen Quynh Trang	Protocol Design, Report Writing
+Vuong Ngoc Duy	Implementation
+Dao Phu Hong Dang	Implementation, Deployment Guideline
+Nguyen Luong Chinh	Usage Guideline, Report Writing
